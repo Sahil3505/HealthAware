@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>HealthAware — Local AI Chatbot</title>
+
+<style>
+:root{--bg:#020617;--accent:#38bdf8;--muted:#9ca3af;--danger:#f97373;--text:#e5e7eb}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,Segoe UI,Helvetica,Arial;
+  background:radial-gradient(circle at top,#0f172a,#000);
+  color:var(--text);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  min-height:100vh
+}
+.shell{
+  width:100%;
+  max-width:1100px;
+  border-radius:18px;
+  display:grid;
+  grid-template-columns:1fr 1.6fr;
+  overflow:hidden;
+  border:1px solid rgba(148,163,184,0.08);
+  box-shadow:0 30px 80px rgba(2,6,23,0.8)
+}
+@media(max-width:900px){.shell{grid-template-columns:1fr}}
+.sidebar{
+  background:linear-gradient(180deg,#071027,#020617);
+  padding:24px;
+  display:flex;
+  flex-direction:column;
+  gap:18px
+}
+.logo{display:flex;align-items:center;justify-content:space-between}
+.logo .pill{display:flex;gap:8px;align-items:center}
+.logo .dot{
+  width:12px;height:12px;border-radius:999px;
+  background:radial-gradient(circle at 30% 30%,#e5f9ff,var(--accent));
+  box-shadow:0 0 10px rgba(56,189,248,0.6)
+}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{
+  padding:6px 10px;border-radius:999px;
+  border:1px solid rgba(148,163,184,0.12);
+  font-size:13px;color:var(--muted)
+}
+.lang-block{
+  margin-top:auto;padding:10px;border-radius:12px;
+  border:1px solid rgba(148,163,184,0.06);
+  display:flex;justify-content:space-between;align-items:center;
+  background:rgba(255,255,255,0.02)
+}
+.chat-panel{
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  background:linear-gradient(180deg,#020617,#000)
+}
+.chat-window{
+  flex:1;min-height:320px;max-height:580px;
+  border-radius:12px;padding:14px;overflow:auto;
+  border:1px solid rgba(31,41,55,0.6);
+  background:rgba(2,6,23,0.6)
+}
+.msg-row{display:flex;margin-bottom:10px}
+.msg-row.user{justify-content:flex-end}
+.msg-bubble{
+  max-width:78%;
+  padding:10px 12px;
+  border-radius:14px;
+  font-size:14px;line-height:1.3
+}
+.msg-bubble.bot{
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(31,41,55,0.6)
+}
+.msg-bubble.user{
+  background:linear-gradient(135deg,var(--accent),#0ea5e9);
+  color:#021018
+}
+.input-row{
+  display:flex;gap:8px;padding:8px;border-radius:12px;
+  background:rgba(15,23,42,0.5);
+  border:1px solid rgba(31,41,55,0.6)
+}
+textarea{
+  flex:1;background:transparent;border:0;color:var(--text);
+  outline:none;resize:none;font-size:14px
+}
+.send-btn{
+  width:42px;height:42px;border-radius:50%;
+  border:0;background:linear-gradient(135deg,var(--accent),#0ea5e9);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:0.2s
+}
+.send-btn svg{
+  width:20px;height:20px;fill:#021018;transform:translateX(1px)
+}
+.hospital-panel{
+  margin-top:8px;padding:10px;border-radius:12px;
+  background:linear-gradient(180deg,rgba(249,115,115,0.06),transparent);
+  border:1px solid rgba(249,115,115,0.12)
+}
+.hospital-card{
+  padding:8px;border-radius:8px;
+  border:1px solid rgba(148,163,184,0.06);
+  margin-top:6px;background:rgba(255,255,255,0.01)
+}
+.severity-pill{
+  display:inline-flex;align-items:center;
+  padding:6px 10px;border-radius:999px;
+  border:1px solid rgba(148,163,184,0.06);
+  font-size:13px
+}
+</style>
+</head>
+
+<body>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="pill"><div class="dot"></div><div id="title-main" style="font-weight:700">HealthAware</div></div>
+      <div id="title-local" style="color:var(--muted)">Local AI</div>
+    </div>
+
+    <h2 id="subheading">AI medical awareness<br><span style="color:var(--accent)">Offline • Private</span></h2>
+
+    <p id="desc" style="color:var(--muted)">
+      Ask about symptoms, prevention and when to see a doctor. The bot will not prescribe medicines.
+    </p>
+
+    <div class="chips">
+      <div class="chip" id="chip1">No prescriptions</div>
+      <div class="chip" id="chip2">Multilingual</div>
+      <div class="chip" id="chip3">Triage</div>
+    </div>
+
+    <div class="lang-block">
+      <div id="interface-label" style="font-size:13px">Interface language</div>
+      <select id="language-select">
+        <option value="en">English</option>
+        <option value="hi">हिंदी</option>
+        <option value="kn">ಕನ್ನಡ</option>
+        <option value="od">ଓଡ଼ିଆ</option>
+      </select>
+    </div>
+
+    <div id="emergency-text" style="font-size:13px;color:var(--muted);margin-top:12px">
+      Emergency: 108 / 112
+    </div>
+  </aside>
+
+  <!-- CHAT PANEL -->
+  <main class="chat-panel">
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div id="session-title" style="font-size:13px;color:var(--muted)">Session · Medical Awareness</div>
+      <div id="severity-chip" class="severity-pill" style="display:none">
+        <span id="severity-label">Mild</span>
+      </div>
+    </div>
+
+    <div id="chat-window" class="chat-window">
+      <div class="msg-row bot">
+        <div class="msg-bubble bot" id="welcome-bubble">
+          <strong>Hello 👋</strong>
+          <div style="margin-top:6px;color:var(--muted)">
+            I am an AI assistant for medical awareness only.<br>
+            I cannot prescribe medicines. Choose a language and ask your question.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div>
+      <div class="input-row">
+        <textarea id="user-input" rows="1" placeholder="Describe your symptom or ask a health question..."></textarea>
+        <button id="send-btn" class="send-btn">
+          <svg viewBox="0 0 24 24">
+            <path d="M22 2L11 13"></path>
+            <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Hospitals -->
+      <div id="hospital-panel" class="hospital-panel" style="display:none">
+        <div id="hospital-title" style="font-weight:700;color:#fecaca">Nearby hospitals</div>
+        <div id="hospital-list"></div>
+
+        <div style="margin-top:12px;text-align:center;">
+          <a id="ambulance-btn"
+            href="tel:108"
+            style="padding:10px 18px;font-weight:600;font-size:14px;
+                   background:linear-gradient(135deg,#dc2626,#f97373);
+                   color:white;border-radius:12px;text-decoration:none;display:inline-block;">
+            🚑 Call Ambulance (108)
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+
+/* DOM bindings */
+const langSelect = document.getElementById("language-select");
+const chatWindow = document.getElementById("chat-window");
+const userInput = document.getElementById("user-input");
+const sendBtn = document.getElementById("send-btn");
+const hospitalPanel = document.getElementById("hospital-panel");
+const hospitalList = document.getElementById("hospital-list");
+const hospitalTitle = document.getElementById("hospital-title");
+const ambulanceBtn = document.getElementById("ambulance-btn");
+const severityChip = document.getElementById("severity-chip");
+const severityLabel = document.getElementById("severity-label");
+
+const subheading = document.getElementById("subheading");
+const desc = document.getElementById("desc");
+const chip1 = document.getElementById("chip1");
+const chip2 = document.getElementById("chip2");
+const chip3 = document.getElementById("chip3");
+const emergencyText = document.getElementById("emergency-text");
+const sessionTitle = document.getElementById("session-title");
+const interfaceLabel = document.getElementById("interface-label");
+const titleMain = document.getElementById("title-main");
+const titleLocal = document.getElementById("title-local");
+const welcomeBubble = document.getElementById("welcome-bubble");
+
+/* ---------------------
+   TRANSLATIONS
+---------------------- */
+const uiTranslations = {
+  en:{
+    welcomeTitle:"Hello 👋",
+    welcomeText:"I am an AI assistant for medical awareness only. I cannot prescribe medicines. Choose a language and ask your question.",
+    inputPlaceholder:"Describe your symptom or ask a health question...",
+    hospitalPanelTitle:"Nearby hospitals",
+    ambulanceBtn:"Call Ambulance",
+    subheading:"AI medical awareness<br><span style='color:var(--accent)'>Offline • Private</span>",
+    desc:"Ask about symptoms, prevention and when to see a doctor. The bot will not prescribe medicines.",
+    chip1:"No prescriptions", chip2:"Multilingual", chip3:"Triage",
+    emergency:"Emergency:",
+    session:"Session · Medical Awareness",
+    interface:"Interface language",
+    titleMain:"HealthAware", titleLocal:"Local AI"
+  },
+  hi:{
+    welcomeTitle:"नमस्ते 👋",
+    welcomeText:"मैं चिकित्सीय जागरूकता के लिए AI सहायक हूँ। मैं दवाइयाँ नहीं लिख सकता। भाषा चुनें और प्रश्न पूछें।",
+    inputPlaceholder:"अपने लक्षण बताएं या स्वास्थ्य प्रश्न पूछें...",
+    hospitalPanelTitle:"नज़दीकी अस्पताल",
+    ambulanceBtn:"आपातकालीन कॉल",
+    subheading:"AI चिकित्सा जागरूकता<br><span style='color:var(--accent)'>ऑफ़लाइन • निजी</span>",
+    desc:"लक्षण, रोकथाम और डॉक्टर को कब दिखाना है—पूछें। बॉट दवाइयाँ नहीं लिखता।",
+    chip1:"दवा नहीं", chip2:"बहुभाषी", chip3:"स्थिति जाँच",
+    emergency:"आपातकाल:",
+    session:"सेशन · चिकित्सा जागरूकता",
+    interface:"भाषा",
+    titleMain:"HealthAware", titleLocal:"स्थानीय AI"
+  },
+  kn:{
+    welcomeTitle:"ನಮಸ್ಕಾರ 👋",
+    welcomeText:"ನಾನು ವೈದ್ಯಕೀಯ ಜಾಗೃತಿ AI ಸಹಾಯಕ. ನಾನು ಔಷಧಿಗಳನ್ನು ಸೂಚಿಸಲಾರೆ. ಭಾಷೆ ಆಯ್ಕೆ ಮಾಡಿ ಪ್ರಶ್ನೆ ಕೇಳಿ.",
+    inputPlaceholder:"ನಿಮ್ಮ ಲಕ್ಷಣ ಅಥವಾ ಪ್ರಶ್ನೆ ದಾಖಲಿಸಿ...",
+    hospitalPanelTitle:"ಹತ್ತಿರದ ಆಸ್ಪತ್ರೆಗಳು",
+    ambulanceBtn:"ಆಂಬ್ಯುಲೆನ್ಸ್ ಕರೆ",
+    subheading:"AI ವೈದ್ಯಕೀಯ ಜಾಗೃತಿ<br><span style='color:var(--accent)'>ಆಫ್‌ಲೈನ್ • ಖಾಸಗಿ</span>",
+    desc:"ಲಕ್ಷಣಗಳು, ತಡೆಗಟ್ಟುವಿಕೆ ಮತ್ತು ವೈದ್ಯರನ್ನು ಭೇಟಿ ಮಾಡುವ ಸಮಯವನ್ನು ಕೇಳಿ. ಬಾಟ್ ಔಷಧಿ ನೀಡುವುದಿಲ್ಲ.",
+    chip1:"ಔಷಧಿ ಇಲ್ಲ", chip2:"ಬಹುಭಾಷೆ", chip3:"ತ್ರೈಯಾಜ್",
+    emergency:"ತುರ್ತು:",
+    session:"ಸೆಷನ್ · ವೈದ್ಯಕೀಯ ಜಾಗೃತಿ",
+    interface:"ಭಾಷೆ",
+    titleMain:"HealthAware", titleLocal:"ಸ್ಥಳೀಯ AI"
+  },
+  od:{
+    welcomeTitle:"ନମସ୍କାର 👋",
+    welcomeText:"ମୁଁ ଚିକିତ୍ସା ସଚେତନତା ପାଇଁ AI ସହାୟକ। ମୁଁ ଔଷଧ ଦେଇପାରେ ନାହିଁ। ଭାଷା ବାଛନ୍ତୁ ଏବଂ ପ୍ରଶ୍ନ ପଚାରନ୍ତୁ।",
+    inputPlaceholder:"ଲକ୍ଷଣ କିମ୍ବା ପ୍ରଶ୍ନ ଲେଖନ୍ତୁ...",
+    hospitalPanelTitle:"ନିକଟସ୍ଥ ହସ୍ପିଟାଲ",
+    ambulanceBtn:"ଆମ୍ବୁଲାନ୍ସ କଲ୍",
+    subheading:"AI ଚିକିତ୍ସା ଜାଗୃକତା<br><span style='color:var(--accent)'>ଅଫଲାଇନ୍ • ଗୋପନୀୟ</span>",
+    desc:"ଲକ୍ଷଣ, ପ୍ରତିରୋଧ ଏବଂ କେବେ ଡାକ୍ତରଙ୍କୁ ଦେଖିବେ—ପଚାରନ୍ତୁ।",
+    chip1:"ଔଷଧ ନାହିଁ", chip2:"ବହୁଭାଷା", chip3:"ତତ୍କାଳ",
+    emergency:"ଜରୁରୀ:",
+    session:"ସେସନ୍ · ଚିକିତ୍ସା ଜାଗୃକତା",
+    interface:"ଭାଷା",
+    titleMain:"HealthAware", titleLocal:"ସ୍ଥାନୀୟ AI"
+  }
+};
+
+/* ----------------------------
+   APPLY UI LANGUAGE
+---------------------------- */
+function updateInterfaceLanguage(lang){
+  const t = uiTranslations[lang] || uiTranslations.en;
+
+  welcomeBubble.innerHTML = `
+    <strong>${t.welcomeTitle}</strong>
+    <div style="margin-top:6px;color:var(--muted)">${t.welcomeText}</div>
+  `;
+
+  userInput.placeholder = t.inputPlaceholder;
+  hospitalTitle.innerText = t.hospitalPanelTitle;
+  ambulanceBtn.innerText = `🚑 ${t.ambulanceBtn} (108)`;
+
+  subheading.innerHTML = t.subheading;
+  desc.innerText = t.desc;
+  chip1.innerText = t.chip1;
+  chip2.innerText = t.chip2;
+  chip3.innerText = t.chip3;
+  emergencyText.innerText = `${t.emergency} 108 / 112`;
+  sessionTitle.innerText = t.session;
+  interfaceLabel.innerText = t.interface;
+  titleMain.innerText = t.titleMain;
+  titleLocal.innerText = t.titleLocal;
+}
+
+langSelect.addEventListener("change",()=>updateInterfaceLanguage(langSelect.value));
+
+/* ----------------------------
+   GEOLOCATION + WAIT FIX
+---------------------------- */
+let userLat=null, userLon=null;
+
+navigator.geolocation?.getCurrentPosition(pos=>{
+  userLat=pos.coords.latitude;
+  userLon=pos.coords.longitude;
+});
+
+/* REAL FIX — wait until geolocation resolves */
+async function waitForLocation(){
+  return new Promise(resolve=>{
+    if (userLat && userLon) return resolve();
+    let tries=0;
+    const timer=setInterval(()=>{
+      if((userLat && userLon) || tries>20){
+        clearInterval(timer);
+        resolve();
+      }
+      tries++;
+    },300);
+  });
+}
+
+/* ----------------------------
+   MESSAGE FUNCTIONS
+---------------------------- */
+function appendMessage(role,text){
+  const row=document.createElement("div");
+  row.className="msg-row "+(role==="user"?"user":"bot");
+
+  const bubble=document.createElement("div");
+  bubble.className="msg-bubble "+(role==="user"?"user":"bot");
+  bubble.innerText=text;
+
+  row.appendChild(bubble);
+  chatWindow.appendChild(row);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function updateSeverity(s){
+  if(!s){ severityChip.style.display="none"; return; }
+  severityChip.style.display="inline-flex";
+  severityLabel.innerText = s.charAt(0).toUpperCase()+s.slice(1);
+}
+
+function renderHospitals(list){
+  hospitalList.innerHTML="";
+  if(!list?.length){hospitalPanel.style.display="none";return;}
+
+  list.forEach(h=>{
+    const gmaps = `https://www.google.com/maps/search/?api=1&query=${h.lat},${h.lon}`;
+
+    const card=document.createElement("div");
+    card.className="hospital-card";
+
+    card.innerHTML = `
+      <div style="font-weight:600;color:#38bdf8;cursor:pointer"
+        onclick="window.open('${gmaps}','_blank')">
+        ${h.name}
+      </div>
+      <div style="color:var(--muted)">
+        ${h.price_estimate} • ${h.distance_km} km
+      </div>
+
+      <div style="margin-top:5px">
+        <a href="${gmaps}" target="_blank"
+          style="color:#0ea5e9;font-size:13px;text-decoration:underline;">
+          Open in Google Maps →
+        </a>
+      </div>
+    `;
+
+    hospitalList.appendChild(card);
+  });
+
+  hospitalPanel.style.display="block";
+}
+
+/* ----------------------------
+   SEND MESSAGE
+---------------------------- */
+async function sendMessage(){
+  const msg=userInput.value.trim();
+  if(!msg) return;
+
+  appendMessage("user",msg);
+  userInput.value="";
+  sendBtn.disabled=true;
+
+  appendMessage("bot","...");
+
+  /* wait for geolocation before sending request */
+  await waitForLocation();
+
+  try{
+    const response = await fetch("/api/chat/",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        message:msg,
+        language:langSelect.value,
+        lat:userLat, lon:userLon
+      })
+    });
+
+    const data = await response.json();
+
+    /* remove "..." */
+    const botBubbles = document.querySelectorAll(".msg-row.bot .msg-bubble");
+    botBubbles[botBubbles.length-1].remove();
+
+    appendMessage("bot", data.reply || "");
+    updateSeverity(data.severity);
+    renderHospitals(data.hospitals);
+
+  }catch(err){
+    appendMessage("bot","Network error: "+err.message);
+  }
+
+  sendBtn.disabled=false;
+}
+
+sendBtn.addEventListener("click",sendMessage);
+userInput.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.shiftKey){
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+/* initial UI */
+updateInterfaceLanguage(langSelect.value);
+
+</script>
+
+</body>
+</html>
