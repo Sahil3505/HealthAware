@@ -43,5 +43,4 @@ The app **never prescribes medicines** and includes a triage step to flag severe
 - Chat history is stored per-session (up to 20 turns) for conversational context.
 - A `/healthcheck/` endpoint returns `OK` and is handy for uptime monitoring.
 
-## License
-MIT
+
